@@ -1,3 +1,4 @@
+// ================= FIREBASE SETUP =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
   getAuth,
@@ -19,7 +20,7 @@ import {
   orderBy
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// 🔥 PASTE YOUR FIREBASE CONFIG HERE
+// 🔴 PUT YOUR FIREBASE DETAILS HERE
 const firebaseConfig = {
   apiKey: "YOUR_KEY",
   authDomain: "YOUR_DOMAIN",
@@ -30,46 +31,79 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// ================= AUTH =================
-
-window.signUp = async function () {
-  const email = emailInput.value;
-  const password = passwordInput.value;
-
-  const userCred = await createUserWithEmailAndPassword(auth, email, password);
-
-  await setDoc(doc(db, "users", userCred.user.uid), {
-    wins: 0
-  });
-
-  alert("Account created!");
-};
-
-window.login = async function () {
-  await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
-};
-
-window.logout = async function () {
-  await signOut(auth);
-};
-
-// ================= USER DISPLAY =================
-
+// ================= GET HTML ELEMENTS =================
 const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
 const userInfo = document.getElementById("userInfo");
 
+// ================= AUTH FUNCTIONS =================
+window.signUp = async function () {
+  try {
+    const userCred = await createUserWithEmailAndPassword(
+      auth,
+      emailInput.value,
+      passwordInput.value
+    );
+
+    await setDoc(doc(db, "users", userCred.user.uid), {
+      wins: 0
+    });
+
+    alert("Account created!");
+    goGame();
+  } catch (err) {
+    alert(err.message);
+  }
+};
+
+window.login = async function () {
+  try {
+    await signInWithEmailAndPassword(
+      auth,
+      emailInput.value,
+      passwordInput.value
+    );
+
+    goGame();
+  } catch (err) {
+    alert(err.message);
+  }
+};
+
+window.logout = async function () {
+  await signOut(auth);
+  window.location.href = "index.html";
+};
+
+// ================= PAGE NAVIGATION =================
+function goGame() {
+  window.location.href = "game.html";
+}
+
+window.goLeaderboard = function () {
+  window.location.href = "leaderboard.html";
+};
+
+window.goGame = function () {
+  window.location.href = "game.html";
+};
+
+// ================= AUTH CHECK =================
 onAuthStateChanged(auth, (user) => {
-  if (user) {
+  const path = window.location.pathname;
+
+  // Protect pages
+  if (!user && (path.includes("game.html") || path.includes("leaderboard.html"))) {
+    window.location.href = "index.html";
+  }
+
+  // Show Player ID
+  if (user && userInfo) {
     userInfo.textContent = "Player ID: " + user.uid;
-    loadLeaderboard();
-  } else {
-    userInfo.textContent = "Not logged in";
   }
 });
 
-// ================= GAME =================
-
+// ================= GAME LOGIC =================
 let currentPlayer = "X";
 let board = ["", "", "", "", "", "", "", "", ""];
 let gameActive = true;
@@ -83,7 +117,10 @@ const winPatterns = [
   [0,4,8],[2,4,6]
 ];
 
-cells.forEach(cell => cell.addEventListener("click", handleClick));
+// Only run game code if board exists
+if (cells.length > 0) {
+  cells.forEach(cell => cell.addEventListener("click", handleClick));
+}
 
 function handleClick() {
   const i = this.dataset.index;
@@ -117,15 +154,18 @@ function checkWin() {
 }
 
 window.resetGame = function () {
-  board.fill("");
+  board = ["", "", "", "", "", "", "", "", ""];
   gameActive = true;
   currentPlayer = "X";
-  statusText.textContent = "Player X's turn";
+
+  if (statusText) {
+    statusText.textContent = "Player X's turn";
+  }
+
   cells.forEach(c => c.textContent = "");
 };
 
-// ================= SCORE =================
-
+// ================= SCORE SYSTEM =================
 async function updateScore() {
   const user = auth.currentUser;
   if (!user) return;
@@ -138,14 +178,13 @@ async function updateScore() {
       wins: snap.data().wins + 1
     });
   }
-
-  loadLeaderboard();
 }
 
 // ================= LEADERBOARD =================
-
 async function loadLeaderboard() {
   const list = document.getElementById("leaderboard");
+  if (!list) return;
+
   list.innerHTML = "";
 
   const q = query(collection(db, "users"), orderBy("wins", "desc"));
@@ -157,3 +196,6 @@ async function loadLeaderboard() {
     list.appendChild(li);
   });
 }
+
+// Run leaderboard only if page has it
+loadLeaderboard();
