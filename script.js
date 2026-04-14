@@ -45,9 +45,11 @@ window.signUp = async function () {
       passwordInput.value
     );
 
-    await setDoc(doc(db, "users", userCred.user.uid), {
-      wins: 0
-    });
+   await setDoc(doc(db, "users", userCred.user.uid), {
+  wins: 0,
+  friends: [],
+  requests: []
+});
 
     alert("Account created!");
     goGame();
@@ -199,3 +201,101 @@ async function loadLeaderboard() {
 
 // Run leaderboard only if page has it
 loadLeaderboard();
+// ================= FRIEND SYSTEM =================
+
+// Send friend request
+window.sendRequest = async function () {
+  const friendId = document.getElementById("friendId").value;
+  const user = auth.currentUser;
+
+  if (!friendId || !user) return alert("Invalid");
+
+  const friendRef = doc(db, "users", friendId);
+  const friendSnap = await getDoc(friendRef);
+
+  if (!friendSnap.exists()) {
+    alert("User not found!");
+    return;
+  }
+
+  // Add request to friend's account
+  await updateDoc(friendRef, {
+    requests: [...(friendSnap.data().requests || []), user.uid]
+  });
+
+  alert("Friend request sent!");
+};
+
+// Load friend requests
+async function loadRequests() {
+  const user = auth.currentUser;
+  const list = document.getElementById("requestsList");
+
+  if (!user || !list) return;
+
+  list.innerHTML = "";
+
+  const snap = await getDoc(doc(db, "users", user.uid));
+  const requests = snap.data().requests || [];
+
+  requests.forEach(id => {
+    const li = document.createElement("li");
+    li.innerHTML = `
+      ${id}
+      <button onclick="acceptRequest('${id}')">Accept</button>
+    `;
+    list.appendChild(li);
+  });
+}
+
+// Accept request
+window.acceptRequest = async function (friendId) {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const userRef = doc(db, "users", user.uid);
+  const friendRef = doc(db, "users", friendId);
+
+  const userSnap = await getDoc(userRef);
+  const friendSnap = await getDoc(friendRef);
+
+  // Add each other as friends
+  await updateDoc(userRef, {
+    friends: [...(userSnap.data().friends || []), friendId],
+    requests: userSnap.data().requests.filter(id => id !== friendId)
+  });
+
+  await updateDoc(friendRef, {
+    friends: [...(friendSnap.data().friends || []), user.uid]
+  });
+
+  loadRequests();
+  loadFriends();
+};
+
+// Load friends list
+async function loadFriends() {
+  const user = auth.currentUser;
+  const list = document.getElementById("friendsList");
+
+  if (!user || !list) return;
+
+  list.innerHTML = "";
+
+  const snap = await getDoc(doc(db, "users", user.uid));
+  const friends = snap.data().friends || [];
+
+  friends.forEach(id => {
+    const li = document.createElement("li");
+    li.textContent = id;
+    list.appendChild(li);
+  });
+}
+
+// Load everything when logged in
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    loadRequests();
+    loadFriends();
+  }
+});
