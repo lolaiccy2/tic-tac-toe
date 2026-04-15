@@ -54,13 +54,16 @@ const passwordInput = document.getElementById("password");
 const userInfo = document.getElementById("userInfo");
 
 // ================= AUTH FUNCTIONS =================
-window.signUp = async function () {
+window.login = async () => {
   try {
-    const userCred = await createUserWithEmailAndPassword(
-      auth,
-      emailInput.value,
-      passwordInput.value
-    );
+    await signInWithEmailAndPassword(auth, email.value, password.value);
+    alert("Login successful!");
+    showGame();
+  } catch (error) {
+    alert(error.message);
+    console.log(error);
+  }
+};
 
    await setDoc(doc(db, "users", userCred.user.uid), {
   wins: 0,
