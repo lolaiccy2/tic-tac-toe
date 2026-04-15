@@ -2,7 +2,6 @@
 <html>
 <head>
   <title>Login</title>
-  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -15,113 +14,6 @@
 <button onclick="login()">Login</button>
 
 <script type="module" src="script.js"></script>
+
 </body>
 </html>
-<script type="module">
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-import {
-  getFirestore,
-  doc,
-  setDoc,
-  getDoc,
-  updateDoc
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-// 🔴 YOUR REAL CONFIG HERE
-const firebaseConfig = {
-  apiKey: "YOUR_KEY",
-  authDomain: "YOUR_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  appId: "YOUR_APP_ID"
-};
-
-// ✅ FIXED INITIALIZATION
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-// ================= GET ELEMENTS =================
-const emailInput = document.getElementById("email");
-const passwordInput = document.getElementById("password");
-
-const loginPage = document.getElementById("loginPage");
-const gamePage = document.getElementById("gamePage");
-const leaderboardPage = document.getElementById("leaderboardPage");
-const userInfo = document.getElementById("userInfo");
-
-// ================= PAGE SWITCH =================
-function showGame() {
-  loginPage.classList.add("hidden");
-  leaderboardPage.classList.add("hidden");
-  gamePage.classList.remove("hidden");
-}
-
-// ================= AUTH =================
-window.signUp = async () => {
-  try {
-    const userCred = await createUserWithEmailAndPassword(
-      auth,
-      emailInput.value,
-      passwordInput.value
-    );
-
-    await setDoc(doc(db, "users", userCred.user.uid), {
-      wins: 0,
-      friends: [],
-      requests: []
-    });
-
-    alert("Account created!");
-    showGame();
-
-  } catch (error) {
-    alert(error.message);
-    console.log(error);
-  }
-};
-
-window.login = async () => {
-  try {
-    await signInWithEmailAndPassword(
-      auth,
-      emailInput.value,
-      passwordInput.value
-    );
-
-    alert("Login successful!");
-    showGame();
-
-  } catch (error) {
-    alert(error.message);
-    console.log(error);
-  }
-};
-
-window.logout = async () => {
-  await signOut(auth);
-  location.reload();
-};
-
-// ================= AUTH STATE =================
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    console.log("Logged in:", user.uid);
-
-    if (userInfo) {
-      userInfo.textContent = "Player ID: " + user.uid;
-    }
-
-    showGame();
-  }
-});
-
-</script>
