@@ -1,5 +1,6 @@
 // ================= FIREBASE SETUP =================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -20,59 +21,42 @@ import {
   orderBy
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// 🔴 PUT YOUR FIREBASE DETAILS HERE
-const firebaseConfig = {
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// 🔴 YOUR FIREBASE CONFIG
 const firebaseConfig = {
   apiKey: "AIzaSyD2-VEYTz9KoZYHFU2odRJfF7ook2R50Hc",
   authDomain: "tic-tac-toe-dd634.firebaseapp.com",
   projectId: "tic-tac-toe-dd634",
   storageBucket: "tic-tac-toe-dd634.firebasestorage.app",
   messagingSenderId: "840551072219",
-  appId: "1:840551072219:web:dddf98d9a9b31bd8bfe7fe",
-  measurementId: "G-GRJYVVRHKF"
+  appId: "1:840551072219:web:dddf98d9a9b31bd8bfe7fe"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-
+// ✅ Initialize
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// ================= GET HTML ELEMENTS =================
+// ================= HTML ELEMENTS =================
 const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
 const userInfo = document.getElementById("userInfo");
 
-// ================= AUTH FUNCTIONS =================
-window.login = async () => {
+// ================= AUTH =================
+window.signUp = async function () {
   try {
-    await signInWithEmailAndPassword(auth, email.value, password.value);
-    alert("Login successful!");
-    showGame();
-  } catch (error) {
-    alert(error.message);
-    console.log(error);
-  }
-};
+    const userCred = await createUserWithEmailAndPassword(
+      auth,
+      emailInput.value,
+      passwordInput.value
+    );
 
-   await setDoc(doc(db, "users", userCred.user.uid), {
-  wins: 0,
-  friends: [],
-  requests: []
-});
+    await setDoc(doc(db, "users", userCred.user.uid), {
+      wins: 0,
+      friends: [],
+      requests: []
+    });
 
     alert("Account created!");
-    goGame();
   } catch (err) {
     alert(err.message);
   }
@@ -86,7 +70,7 @@ window.login = async function () {
       passwordInput.value
     );
 
-    goGame();
+    alert("Login successful!");
   } catch (err) {
     alert(err.message);
   }
@@ -94,40 +78,24 @@ window.login = async function () {
 
 window.logout = async function () {
   await signOut(auth);
-  window.location.href = "index.html";
+  location.reload();
 };
 
-// ================= PAGE NAVIGATION =================
-function goGame() {
-  window.location.href = "game.html";
-}
-
-window.goLeaderboard = function () {
-  window.location.href = "leaderboard.html";
-};
-
-window.goGame = function () {
-  window.location.href = "game.html";
-};
-
-// ================= AUTH CHECK =================
+// ================= AUTH STATE =================
 onAuthStateChanged(auth, (user) => {
-  const path = window.location.pathname;
-
-  // Protect pages
-  if (!user && (path.includes("game.html") || path.includes("leaderboard.html"))) {
-    window.location.href = "index.html";
-  }
-
-  // Show Player ID
   if (user && userInfo) {
     userInfo.textContent = "Player ID: " + user.uid;
   }
+
+  if (user) {
+    loadRequests();
+    loadFriends();
+  }
 });
 
-// ================= GAME LOGIC =================
+// ================= GAME =================
+let board = ["","","","","","","","",""];
 let currentPlayer = "X";
-let board = ["", "", "", "", "", "", "", "", ""];
 let gameActive = true;
 
 const cells = document.querySelectorAll(".cell");
@@ -139,7 +107,6 @@ const winPatterns = [
   [0,4,8],[2,4,6]
 ];
 
-// Only run game code if board exists
 if (cells.length > 0) {
   cells.forEach(cell => cell.addEventListener("click", handleClick));
 }
@@ -176,7 +143,7 @@ function checkWin() {
 }
 
 window.resetGame = function () {
-  board = ["", "", "", "", "", "", "", "", ""];
+  board = ["","","","","","","","",""];
   gameActive = true;
   currentPlayer = "X";
 
@@ -187,7 +154,7 @@ window.resetGame = function () {
   cells.forEach(c => c.textContent = "");
 };
 
-// ================= SCORE SYSTEM =================
+// ================= SCORE =================
 async function updateScore() {
   const user = auth.currentUser;
   if (!user) return;
@@ -219,11 +186,9 @@ async function loadLeaderboard() {
   });
 }
 
-// Run leaderboard only if page has it
 loadLeaderboard();
-// ================= FRIEND SYSTEM =================
 
-// Send friend request
+// ================= FRIEND SYSTEM =================
 window.sendRequest = async function () {
   const friendId = document.getElementById("friendId").value;
   const user = auth.currentUser;
@@ -238,15 +203,13 @@ window.sendRequest = async function () {
     return;
   }
 
-  // Add request to friend's account
   await updateDoc(friendRef, {
     requests: [...(friendSnap.data().requests || []), user.uid]
   });
 
-  alert("Friend request sent!");
+  alert("Request sent!");
 };
 
-// Load friend requests
 async function loadRequests() {
   const user = auth.currentUser;
   const list = document.getElementById("requestsList");
@@ -260,15 +223,11 @@ async function loadRequests() {
 
   requests.forEach(id => {
     const li = document.createElement("li");
-    li.innerHTML = `
-      ${id}
-      <button onclick="acceptRequest('${id}')">Accept</button>
-    `;
+    li.innerHTML = `${id} <button onclick="acceptRequest('${id}')">Accept</button>`;
     list.appendChild(li);
   });
 }
 
-// Accept request
 window.acceptRequest = async function (friendId) {
   const user = auth.currentUser;
   if (!user) return;
@@ -279,7 +238,6 @@ window.acceptRequest = async function (friendId) {
   const userSnap = await getDoc(userRef);
   const friendSnap = await getDoc(friendRef);
 
-  // Add each other as friends
   await updateDoc(userRef, {
     friends: [...(userSnap.data().friends || []), friendId],
     requests: userSnap.data().requests.filter(id => id !== friendId)
@@ -293,7 +251,6 @@ window.acceptRequest = async function (friendId) {
   loadFriends();
 };
 
-// Load friends list
 async function loadFriends() {
   const user = auth.currentUser;
   const list = document.getElementById("friendsList");
@@ -311,11 +268,3 @@ async function loadFriends() {
     list.appendChild(li);
   });
 }
-
-// Load everything when logged in
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    loadRequests();
-    loadFriends();
-  }
-});
