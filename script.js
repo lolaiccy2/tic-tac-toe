@@ -62,7 +62,7 @@ window.signUp = async function () {
   }
 };
 
-window.login = async function () {
+window.login = async () => {
   try {
     await signInWithEmailAndPassword(
       auth,
@@ -70,9 +70,10 @@ window.login = async function () {
       passwordInput.value
     );
 
-    alert("Login successful!");
-  } catch (err) {
-    alert(err.message);
+    window.location.href = "game.html"; // ✅ redirect
+
+  } catch (error) {
+    alert(error.message);
   }
 };
 
