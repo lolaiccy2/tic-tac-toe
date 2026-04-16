@@ -2,11 +2,12 @@
 <html>
 <head>
   <title>Game</title>
-  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <h2 id="userInfo"></h2>
+
+<h1>Tic Tac Toe</h1>
 
 <div id="board">
   <div class="cell" data-index="0"></div>
@@ -20,21 +21,22 @@
   <div class="cell" data-index="8"></div>
 </div>
 
-<h2 id="status">Player X's turn</h2>
+<h3 id="status">Player X's turn</h3>
 
 <button onclick="resetGame()">Restart</button>
-<button onclick="goLeaderboard()">Leaderboard</button>
 <button onclick="logout()">Logout</button>
 
-<script type="module" src="script.js"></script>
-</body>
-</html>
 <h3>Find Friend</h3>
-<input type="text" id="friendId" placeholder="Enter Player ID">
+<input id="friendId" placeholder="Enter Player ID">
 <button onclick="sendRequest()">Send Request</button>
 
-<h3>Friend Requests</h3>
+<h3>Requests</h3>
 <ul id="requestsList"></ul>
 
-<h3>Your Friends</h3>
+<h3>Friends</h3>
 <ul id="friendsList"></ul>
+
+<script type="module" src="script.js"></script>
+
+</body>
+</html>
