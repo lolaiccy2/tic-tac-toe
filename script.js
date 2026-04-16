@@ -14,35 +14,27 @@ import {
   doc,
   setDoc,
   getDoc,
-  updateDoc,
-  collection,
-  getDocs,
-  query,
-  orderBy
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// 🔴 YOUR FIREBASE CONFIG
+// 🔴 YOUR CONFIG
 const firebaseConfig = {
   apiKey: "AIzaSyD2-VEYTz9KoZYHFU2odRJfF7ook2R50Hc",
   authDomain: "tic-tac-toe-dd634.firebaseapp.com",
   projectId: "tic-tac-toe-dd634",
-  storageBucket: "tic-tac-toe-dd634.firebasestorage.app",
-  messagingSenderId: "840551072219",
   appId: "1:840551072219:web:dddf98d9a9b31bd8bfe7fe"
 };
 
-// ✅ Initialize
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// ================= HTML ELEMENTS =================
+// ================= INPUTS =================
 const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
-const userInfo = document.getElementById("userInfo");
 
-// ================= AUTH =================
-window.signUp = async function () {
+// ================= SIGN UP =================
+window.signUp = async () => {
   try {
     const userCred = await createUserWithEmailAndPassword(
       auth,
@@ -62,6 +54,7 @@ window.signUp = async function () {
   }
 };
 
+// ================= LOGIN =================
 window.login = async () => {
   try {
     await signInWithEmailAndPassword(
@@ -70,25 +63,27 @@ window.login = async () => {
       passwordInput.value
     );
 
-    window.location.href = "game.html"; // ✅ redirect
+    // ✅ REDIRECT TO GAME
+    window.location.href = "game.html";
 
-  } catch (error) {
-    alert(error.message);
+  } catch (err) {
+    alert(err.message);
   }
 };
 
-window.logout = async function () {
+// ================= LOGOUT =================
+window.logout = async () => {
   await signOut(auth);
-  location.reload();
+  window.location.href = "index.html";
 };
 
 // ================= AUTH STATE =================
 onAuthStateChanged(auth, (user) => {
+  const userInfo = document.getElementById("userInfo");
+
   if (user && userInfo) {
     userInfo.textContent = "Player ID: " + user.uid;
-  }
 
-  if (user) {
     loadRequests();
     loadFriends();
   }
@@ -97,16 +92,9 @@ onAuthStateChanged(auth, (user) => {
 // ================= GAME =================
 let board = ["","","","","","","","",""];
 let currentPlayer = "X";
-let gameActive = true;
 
 const cells = document.querySelectorAll(".cell");
 const statusText = document.getElementById("status");
-
-const winPatterns = [
-  [0,1,2],[3,4,5],[6,7,8],
-  [0,3,6],[1,4,7],[2,5,8],
-  [0,4,8],[2,4,6]
-];
 
 if (cells.length > 0) {
   cells.forEach(cell => cell.addEventListener("click", handleClick));
@@ -115,44 +103,37 @@ if (cells.length > 0) {
 function handleClick() {
   const i = this.dataset.index;
 
-  if (board[i] || !gameActive) return;
+  if (board[i]) return;
 
   board[i] = currentPlayer;
   this.textContent = currentPlayer;
 
   if (checkWin()) {
-    statusText.textContent = currentPlayer + " Wins!";
+    statusText.textContent = currentPlayer + " wins!";
     updateScore();
-    gameActive = false;
     return;
   }
 
   if (!board.includes("")) {
     statusText.textContent = "Draw!";
-    gameActive = false;
     return;
   }
 
   currentPlayer = currentPlayer === "X" ? "O" : "X";
-  statusText.textContent = "Player " + currentPlayer + "'s turn";
+  statusText.textContent = currentPlayer + "'s turn";
 }
 
 function checkWin() {
-  return winPatterns.some(([a,b,c]) =>
-    board[a] && board[a] === board[b] && board[a] === board[c]
-  );
+  const wins = [[0,1,2],[3,4,5],[6,7,8],[0,4,8],[2,4,6]];
+  return wins.some(([a,b,c]) => board[a] && board[a]===board[b] && board[a]===board[c]);
 }
 
-window.resetGame = function () {
+window.resetGame = () => {
   board = ["","","","","","","","",""];
-  gameActive = true;
   currentPlayer = "X";
 
-  if (statusText) {
-    statusText.textContent = "Player X's turn";
-  }
-
   cells.forEach(c => c.textContent = "");
+  if (statusText) statusText.textContent = "Player X's turn";
 };
 
 // ================= SCORE =================
@@ -170,27 +151,8 @@ async function updateScore() {
   }
 }
 
-// ================= LEADERBOARD =================
-async function loadLeaderboard() {
-  const list = document.getElementById("leaderboard");
-  if (!list) return;
-
-  list.innerHTML = "";
-
-  const q = query(collection(db, "users"), orderBy("wins", "desc"));
-  const snapshot = await getDocs(q);
-
-  snapshot.forEach(docSnap => {
-    const li = document.createElement("li");
-    li.textContent = docSnap.id + " - Wins: " + docSnap.data().wins;
-    list.appendChild(li);
-  });
-}
-
-loadLeaderboard();
-
 // ================= FRIEND SYSTEM =================
-window.sendRequest = async function () {
+window.sendRequest = async () => {
   const friendId = document.getElementById("friendId").value;
   const user = auth.currentUser;
 
@@ -229,9 +191,8 @@ async function loadRequests() {
   });
 }
 
-window.acceptRequest = async function (friendId) {
+window.acceptRequest = async (friendId) => {
   const user = auth.currentUser;
-  if (!user) return;
 
   const userRef = doc(db, "users", user.uid);
   const friendRef = doc(db, "users", friendId);
